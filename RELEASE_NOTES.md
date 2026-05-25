@@ -1,54 +1,33 @@
-# What's new in v0.1.2
+# What's new in v0.1.3
 
-A big follow-up to the initial release: fixed the blank-artwork bug on iPod 5.5, added an in-app updater, added a one-click Auto ReplayGain feature, and tightened up metadata pass-through so converted tracks carry more of their original tags.
+A focused patch for the lingering blank-artwork bug. v0.1.2's chroma fix landed correctly (`yuvj420p`) but artwork was still showing blank on iPod 5.5 because Sharp / libjpeg-turbo silently omits the **JFIF APP0 marker** — the `FF E0 ... JFIF\0` identifier that iPod's hardware JPEG decoder uses to recognise the bitstream. Without it, the decoder bails even when chroma, dimensions, and atom placement are correct.
 
-## iPod artwork fix
-- **Cover art now displays on iPod 5.5.** v0.1.1 was emitting JPEGs at 4:4:4 chroma subsampling (`yuvj444p`), which the iPod's hardware decoder silently rejects — the symptom was blank album art on every track. The pipeline now produces 4:2:0 (`yuvj420p`), verified via `ffprobe`. Tracks already on your iPod from v0.1.1 still have broken artwork; delete + re-sync them through the app to fix.
+## Fix
+- `toIpodJpeg` now injects a canonical 18-byte JFIF APP0 marker (`FF E0 00 10 "JFIF\0" 01 02 00 00 01 00 01 00 00`) immediately after Sharp's SOI byte. Output JPEG headers now begin `FF D8 FF E0 00 10 4A 46 49 46 ...` — exactly what the hardware decoder expects.
+- Explicit `progressive: false` added to the Sharp JPEG config (belt-and-suspenders: hardware decoders only handle baseline JPEG anyway, but make the intent explicit).
+- Empirically verified end-to-end: real FLAC → convertOne → extract embedded JPEG → JFIF marker present, `pix_fmt: yuvj420p`, ffmpeg's `-c:v copy` mux passes the bytes through unchanged.
 
-## Auto ReplayGain
-- New **Auto ReplayGain** button in the topbar. Analyzes every iPod track with `ffmpeg`'s `ebur128` filter and writes ReplayGain 2.0 tags (`REPLAYGAIN_TRACK_GAIN`, `REPLAYGAIN_TRACK_PEAK`) as iTunes-style freeform atoms — readable by Rockbox, foobar2000, MusicBee.
-- Pre-flight modal asks **Process new** (only tracks the app hasn't tagged yet) or **Process all**, with live counts.
-- Per-track history at `userData/replaygain-history.json` keyed by path + mtime, so re-converted tracks auto-flag as needing re-tagging.
-- Full-screen progress overlay with live readouts and Cancel.
-- Written via a small pure-Node MP4 atom toolkit in `src/mp4-tags.js`. ffmpeg's MP4 muxer silently drops freeform iTunes atoms even with `-movflags +use_metadata_tags`, so the toolkit walks the box tree itself, appends `----:com.apple.iTunes:KEY` atoms, and patches `stco` / `co64` chunk offsets so audio still plays.
-
-## In-app updater
-- App checks GitHub on launch for newer releases (1.5 s delay so it doesn't block boot). When one's found, a pulsing **Update** pill appears in the topbar; one click downloads + auto-installs + relaunches.
-- Settings → **Check for updates** button for manual checks with live status feedback.
-- Windows: NSIS silent self-install (`/S --updated`). macOS: streamed DMG download → `hdiutil` mount → `ditto` extract → double-fork bash relauncher with quarantine strip + ad-hoc re-codesign + App Translocation detection.
-- *Requires the GitHub repo to be public* — uses unauthenticated `/releases/latest`, which 404s on private repos.
-
-## Better metadata pass-through
-- **Source sample rate preserved.** Was hard-coded to 44.1 kHz, now passes through whatever the source has (44.1 / 48 / 96 / 192 kHz).
-- **Embedded artwork is preferred.** Pulls the picture from the source file's embedded tags first via `music-metadata`; iTunes Search now only fires when the source has no embedded art. Faster, more accurate, works offline for tagged libraries.
-- More tags now travel from FLAC → M4A: track number, disc number, BPM, composer, genre, comment, copyright, grouping — written via `-metadata` with the iTunes atom mapping ffmpeg knows about.
-- Non-standard fields land via freeform atoms: ISRC, UPC / BARCODE, label, catalog number, MusicBrainz IDs, release country, media type, original release date.
-
-## UI improvements
-- **Per-genre master checkboxes** in the Adds column — three-state (all / none / indeterminate). One click sweeps an entire genre on or off.
-- **Bulk delete** on the Deletes column: checkboxes, "Select all" / "None", confirmation modal that previews up to 5 entries.
-- Column footers align cleanly so the Add/Delete buttons no longer get clipped by the statusbar.
-- Track rows show real title (from tags) + muted artist line — matches the `robogears-downloader` queue-item style.
-- New track filename rule: output `.m4a` is named from `tags.title`, sanitized for Windows, with collision-safe `(2)`, `(3)` suffixes (no silent overwrites).
+## What this means for existing tracks
+- The fix only applies to **newly converted** tracks.
+- Tracks already on your iPod from v0.1.1 or v0.1.2 still have broken artwork (no JFIF marker and/or wrong chroma). To fix them: delete + re-sync them through the app.
+- A one-click "fix artwork on existing iPod tracks" feature could be added in a future release — open an issue if you'd find it useful.
 
 ---
 
 # Install
 
-- **Windows**: download `flac-to-ipod-setup.exe`, double-click. NSIS one-click installer drops the app at `%LOCALAPPDATA%\Programs\FLAC to iPod\` (per-user, no admin). Desktop + Start Menu shortcuts.
-- **macOS (Apple Silicon)**: download `flac-to-ipod-mac-arm64.dmg`, mount, drag into `/Applications/`. First launch: right-click → Open to bypass Gatekeeper's unidentified-developer warning.
+- **Windows**: download `flac-to-ipod-setup.exe`, double-click. NSIS installer drops the app at `%LOCALAPPDATA%\Programs\FLAC to iPod\`. SmartScreen may warn on first launch — "More info" → "Run anyway".
+- **macOS (Apple Silicon)**: download `flac-to-ipod-mac-arm64.dmg`, mount, drag into `/Applications/`. First launch: right-click → Open to bypass Gatekeeper.
 
-**One-time manual install for v0.1.1 users.** v0.1.1 has no auto-updater code, so it can't auto-detect this release. Download the installer above and install over your existing copy. From v0.1.2 onward, updates auto-apply via the in-app pill.
-
-User config (paths, scan cache, ReplayGain history) lives at `%APPDATA%\flac-to-ipod\` on Windows and `~/Library/Application Support/flac-to-ipod/` on macOS — never bundled or shipped.
+If you're on v0.1.2, the in-app **Update** pill in the topbar will detect this release and self-install with one click. Users on v0.1.1 still need a one-time manual install (that version has no updater code).
 
 ## Requirements
 
 - Source library organized as `<root>/<Genre>/track.{flac,mp3,wav,m4a,aac}`.
 - iPod-side destination with `.m4a` files; genre folders are created on demand.
-- Internet only required for the iTunes Search artwork fallback. Files with embedded artwork (most FLAC/MP3 from a tagging tool) work fully offline.
-- For ReplayGain playback: a player that reads iTunes freeform `----:com.apple.iTunes:REPLAYGAIN_*` atoms (Rockbox, foobar2000, MusicBee). Apple's stock iPod firmware reads `iTunNORM` instead — out of scope here.
+- Internet only required for the iTunes Search artwork fallback. Files with embedded artwork work fully offline.
+- For ReplayGain playback: a player that reads iTunes-freeform `----:com.apple.iTunes:REPLAYGAIN_*` atoms (Rockbox, foobar2000, MusicBee).
 
 ---
 
-**Full Changelog**: https://github.com/robogears/FLACtoiPod/compare/v0.1.1...v0.1.2
+**Full Changelog**: https://github.com/robogears/FLACtoiPod/compare/v0.1.2...v0.1.3

@@ -1,21 +1,67 @@
+const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 const { extractEmbeddedArtwork } = require('./metadata');
 
+// Canonical JFIF APP0 marker, 18 bytes total. Required by the iPod 5.5
+// hardware JPEG decoder to recognise a bitstream as JPEG — without it the
+// decoder silently shows blank artwork even if everything else is correct.
+// Sharp / libjpeg-turbo don't emit this marker by default (and `withMetadata`
+// emits an APP1 Exif instead), so we splice it in by hand right after SOI.
+//
+//   FF E0          APP0 marker
+//   00 10          segment length = 16
+//   4A 46 49 46 00 "JFIF" + NUL terminator
+//   01 02          version 1.02
+//   00             units = 0 (no absolute units)
+//   00 01 00 01    Xdensity=1, Ydensity=1
+//   00 00          no embedded thumbnail
+const JFIF_APP0 = Buffer.from([
+  0xFF, 0xE0,
+  0x00, 0x10,
+  0x4A, 0x46, 0x49, 0x46, 0x00,
+  0x01, 0x02,
+  0x00,
+  0x00, 0x01,
+  0x00, 0x01,
+  0x00, 0x00,
+]);
+
+// "JFIF" + NUL — the identifier at bytes 6-10 of a JFIF APP0 segment. Held
+// as a byte array so the source file has no embedded NUL byte (which would
+// trip git's binary-file heuristic).
+const JFIF_IDENT = Buffer.from([0x4A, 0x46, 0x49, 0x46, 0x00]);
+
+function hasJfif(jpegBuf) {
+  if (jpegBuf.length < 11) return false;
+  if (jpegBuf[0] !== 0xFF || jpegBuf[1] !== 0xD8) return false;
+  if (jpegBuf[2] !== 0xFF || jpegBuf[3] !== 0xE0) return false;
+  return jpegBuf.subarray(6, 11).equals(JFIF_IDENT);
+}
+
+function ensureJfif(jpegBuf) {
+  if (hasJfif(jpegBuf)) return jpegBuf;
+  // Splice the APP0 right after SOI. Anything that was there (e.g. Exif
+  // APP1) shifts down — multiple APP segments are valid; JFIF just needs
+  // to be first.
+  return Buffer.concat([jpegBuf.subarray(0, 2), JFIF_APP0, jpegBuf.subarray(2)]);
+}
+
 // Resize an image buffer to a 600x600 JPEG that the iPod 5.5 can display.
-// The hardware JPEG decoder only handles 4:2:0 chroma subsampling — higher
-// subsampling rates (4:2:2, 4:4:4) are silently rejected and the artwork
-// renders blank on the device. Verified via ffprobe: this config produces
-// `pix_fmt: yuvj420p`.
+//   - 4:2:0 chroma (yuvj420p) — the hardware decoder rejects 4:2:2 / 4:4:4
+//   - baseline (not progressive) — hardware decoders only do baseline
+//   - JFIF APP0 marker present — see comment on JFIF_APP0 above
 async function toIpodJpeg(inputBuffer, outPath) {
-  await sharp(inputBuffer)
+  const raw = await sharp(inputBuffer)
     .resize(600, 600, { fit: 'cover' })
     .jpeg({
       quality: 90,
       chromaSubsampling: '4:2:0',
       mozjpeg: false,
+      progressive: false,
     })
-    .toFile(outPath);
+    .toBuffer();
+  fs.writeFileSync(outPath, ensureJfif(raw));
   return outPath;
 }
 
