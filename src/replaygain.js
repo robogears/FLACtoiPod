@@ -20,7 +20,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const ffmpegPath = require('ffmpeg-static');
+const { ffmpegPath } = require('./bin-path');
 const { setFreeformTags } = require('./mp4-tags');
 
 const REFERENCE_LUFS = -18;

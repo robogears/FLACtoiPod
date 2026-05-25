@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
-const ffmpegPath = require('ffmpeg-static');
+const { ffmpegPath } = require('./bin-path');
 const { fetchArtwork } = require('./artwork');
 const { setFreeformTags } = require('./mp4-tags');
 
