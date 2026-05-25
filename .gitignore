@@ -15,8 +15,17 @@ out/
 # ─── Local dev / test artifacts ────────────────────────────────
 test-scan.js
 test-embedded.js
+test-rg*.js
+verify-chroma.js
 *.tmp
 *.tmp.*
+
+# ─── Per-user runtime state (lives in userData, never bundled) ───
+# Defensive: if a stray copy ever ends up in the working directory,
+# don't accidentally commit personal-library data.
+replaygain-history.json
+metadata-cache.json
+config.json
 
 # ─── Diagnostic / log files ────────────────────────────────────
 *.log

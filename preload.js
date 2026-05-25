@@ -14,6 +14,21 @@ contextBridge.exposeInMainWorld('api', {
   },
   shell: {
     openFolder: (fullPath) => ipcRenderer.invoke('shell:open-folder', fullPath),
+    openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
+  },
+  app: {
+    version: () => ipcRenderer.invoke('app:version'),
+  },
+  updater: {
+    check: () => ipcRenderer.invoke('update:check'),
+    canSelfInstall: () => ipcRenderer.invoke('update:can-self-install'),
+    download: (url) => ipcRenderer.invoke('update:download', url),
+    apply: () => ipcRenderer.invoke('update:apply'),
+  },
+  replaygain: {
+    plan: () => ipcRenderer.invoke('replaygain:plan'),
+    run: (mode) => ipcRenderer.invoke('replaygain:run', { mode }),
+    cancel: () => ipcRenderer.invoke('replaygain:cancel'),
   },
   on: (channel, handler) => {
     const allowed = new Set([
@@ -22,6 +37,9 @@ contextBridge.exposeInMainWorld('api', {
       'convert:track-progress',
       'convert:track-done',
       'convert:cancelled',
+      'update:available',
+      'update:download-progress',
+      'replaygain:progress',
     ]);
     if (!allowed.has(channel)) return () => {};
     const listener = (_e, payload) => handler(payload);

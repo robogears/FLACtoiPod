@@ -16,9 +16,22 @@
                 <path d="M10.5 8 L13.5 8 L13.5 11 L15 11 L12 14.5 L9 11 L10.5 11 Z" fill="#fff"/>
             </svg>
             <span class="brand-name">FLAC → iPod</span>
+            <span class="brand-version" id="brand-version"></span>
+            <button class="brand-update-pill" id="brand-update-pill" hidden>Update now</button>
             <span class="brand-paths" id="brand-paths">…</span>
         </div>
         <div class="topbar-actions">
+            <button class="icon-btn topbar-action" id="replaygain-btn" title="Reset & rescan ReplayGain on all iPod tracks" aria-label="Auto ReplayGain">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="4" y1="12" x2="20" y2="12"></line>
+                    <line x1="4" y1="8" x2="20" y2="8"></line>
+                    <line x1="4" y1="16" x2="20" y2="16"></line>
+                    <circle cx="8" cy="8" r="2" fill="currentColor"></circle>
+                    <circle cx="14" cy="12" r="2" fill="currentColor"></circle>
+                    <circle cx="10" cy="16" r="2" fill="currentColor"></circle>
+                </svg>
+                <span>Auto ReplayGain</span>
+            </button>
             <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Settings">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="3"></circle>
@@ -120,10 +133,58 @@
                     <button id="pick-ipod" class="secondary-btn">Browse…</button>
                 </div>
                 <p class="modal-hint" style="margin-top:8px;">Where 320kbps AAC M4A files land — one genre subfolder each.</p>
+
+                <div class="settings-section">
+                    <label class="label">Updates</label>
+                    <div class="auth-row">
+                        <span id="update-status" class="auth-status">Current version: …</span>
+                        <button id="check-updates-btn" class="secondary-btn">Check for updates</button>
+                    </div>
+                    <p class="modal-hint" style="margin-top:8px;">Checks GitHub for a newer release. If one's found, an <em>Update now</em> pill appears next to the app name.</p>
+                </div>
             </div>
             <div class="modal-foot">
                 <button class="primary-btn" data-close="settings-modal">Done</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Auto ReplayGain mode chooser -->
+    <div class="modal-backdrop" id="rg-chooser" hidden>
+        <div class="modal">
+            <div class="modal-head">
+                <h2>Auto ReplayGain</h2>
+                <button class="icon-btn close-modal" data-close="rg-chooser" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-hint" id="rg-chooser-summary">…</p>
+                <div class="rg-chooser-options">
+                    <button class="primary-btn rg-choose" id="rg-choose-new" data-mode="new" disabled>
+                        Process <span id="rg-new-count">0</span> new
+                    </button>
+                    <button class="secondary-btn rg-choose" id="rg-choose-all" data-mode="all">
+                        Process all <span id="rg-all-count">0</span>
+                    </button>
+                </div>
+                <p class="modal-hint" style="margin-top:14px;font-size:12px;">
+                    <em>New</em> means tracks this app hasn't tagged yet (including files added after the last run, or re-converted since). Pre-existing ReplayGain from other tools counts as new.
+                </p>
+            </div>
+            <div class="modal-foot">
+                <button class="text-btn" data-close="rg-chooser">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto ReplayGain loading overlay -->
+    <div class="loading" id="rg-overlay" hidden>
+        <div class="loading-inner rg-panel">
+            <div class="spinner"></div>
+            <div class="rg-title">Auto ReplayGain</div>
+            <div class="rg-meta" id="rg-meta">Scanning iPod folder…</div>
+            <div class="rg-progress-bar"><div class="rg-progress-fill" id="rg-progress-fill"></div></div>
+            <div class="rg-stats" id="rg-stats">0 / 0</div>
+            <button class="text-btn loading-cancel-btn" id="rg-cancel">Cancel</button>
         </div>
     </div>
 

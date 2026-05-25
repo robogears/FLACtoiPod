@@ -5,7 +5,7 @@ Desktop sync tool that mirrors a master music library (FLAC / MP3 / WAV / M4A) i
 ## How it works
 
 - **Tag-based matching.** Scans both libraries by embedded metadata (`title`, `artist`) — not just filename — so messy source names like `00 - jaŸ-z - ni__as in paris.flac` correctly match the corresponding `Niggas In Paris.m4a` on the iPod. Filename heuristics are a fallback.
-- **Embedded artwork preferred.** Pulls album art from the source file's tags via [`music-metadata`](https://github.com/Borewit/music-metadata). Falls back to iTunes Search API only if the source has no embedded picture. Always resized to 600×600 RGB JPEG at 4:4:4 chroma via [`sharp`](https://sharp.pixelplumbing.com/) — never YUV, which iPod 5.5 renders blank.
+- **Embedded artwork preferred.** Pulls album art from the source file's tags via [`music-metadata`](https://github.com/Borewit/music-metadata). Falls back to iTunes Search API only if the source has no embedded picture. Resized to 600×600 JPEG at 4:2:0 chroma via [`sharp`](https://sharp.pixelplumbing.com/) — the iPod 5.5 hardware JPEG decoder only accepts 4:2:0; higher subsampling rates render as blank artwork.
 - **Title-based output names.** Converted files are named from `tags.title`, sanitized for Windows. Collision-safe (`(2)`, `(3)` suffixes).
 - **Read-only on the source.** Original library is never modified; only the destination receives new `.m4a` files.
 

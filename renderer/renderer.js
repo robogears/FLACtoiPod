@@ -424,4 +424,209 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// ─── Updater ─────────────────────────────────────────────────────────────
+
+const updater = {
+  state: 'idle',          // idle | downloading | restarting
+  payload: null,          // { version, downloadUrl, releaseUrl }
+  surfaceReady: false,
+  pending: null,          // queued payload if it arrives before init finishes
+  selfInstall: false,
+};
+
+async function initUpdater() {
+  const version = await window.api.app.version();
+  $('brand-version').textContent = `v${version}`;
+  $('update-status').textContent = `Current version: v${version}`;
+
+  updater.selfInstall = await window.api.updater.canSelfInstall().catch(() => false);
+  updater.surfaceReady = true;
+  if (updater.pending) {
+    applyUpdatePayload(updater.pending);
+    updater.pending = null;
+  }
+}
+
+function applyUpdatePayload(payload) {
+  updater.payload = payload;
+  const pill = $('brand-update-pill');
+  pill.hidden = false;
+  pill.textContent = `Update ${payload.version}`;
+  pill.disabled = false;
+}
+
+window.api.on('update:available', (payload) => {
+  if (!updater.surfaceReady) { updater.pending = payload; return; }
+  if (updater.state !== 'idle') return;
+  applyUpdatePayload(payload);
+});
+
+$('brand-update-pill').addEventListener('click', async () => {
+  if (updater.state !== 'idle' || !updater.payload) return;
+  const pill = $('brand-update-pill');
+
+  if (!updater.selfInstall) {
+    window.api.shell.openExternal(updater.payload.releaseUrl);
+    return;
+  }
+
+  updater.state = 'downloading';
+  pill.disabled = true;
+  pill.textContent = 'Starting…';
+
+  const r = await window.api.updater.download(updater.payload.downloadUrl);
+  if (!r || !r.ok) {
+    updater.state = 'idle';
+    pill.disabled = false;
+    pill.textContent = 'Download failed — retry';
+    return;
+  }
+
+  // One-click flow: immediately apply once downloaded.
+  pill.textContent = 'Restarting…';
+  updater.state = 'restarting';
+  await window.api.updater.apply();
+});
+
+window.api.on('update:download-progress', ({ downloaded, total }) => {
+  if (updater.state !== 'downloading') return;
+  const pill = $('brand-update-pill');
+  if (total > 0) {
+    pill.textContent = `Downloading ${Math.floor((downloaded / total) * 100)}%`;
+  } else {
+    pill.textContent = `Downloading ${(downloaded / 1024 / 1024).toFixed(1)} MB`;
+  }
+});
+
+// Settings → Check for updates
+$('check-updates-btn').addEventListener('click', async () => {
+  const btn = $('check-updates-btn');
+  const status = $('update-status');
+  btn.disabled = true;
+  const prevText = btn.textContent;
+  btn.textContent = 'Checking…';
+  status.className = 'auth-status';
+
+  const result = await window.api.updater.check();
+
+  if (result.status === 'available') {
+    status.textContent = `${result.version} available!`;
+    status.className = 'auth-status ok';
+  } else if (result.status === 'up-to-date') {
+    status.textContent = `Up to date ✓  (v${result.version})`;
+    status.className = 'auth-status ok';
+  } else {
+    status.textContent = result.message || 'Check failed';
+    status.className = 'auth-status bad';
+  }
+
+  setTimeout(() => {
+    btn.textContent = prevText;
+    btn.disabled = false;
+  }, 2500);
+});
+
+// ─── Auto ReplayGain ─────────────────────────────────────────────────────
+
+const replaygain = {
+  running: false,
+};
+
+$('replaygain-btn').addEventListener('click', openReplayGainChooser);
+$('rg-cancel').addEventListener('click', () => {
+  $('rg-cancel').disabled = true;
+  $('rg-cancel').textContent = 'Cancelling…';
+  window.api.replaygain.cancel();
+});
+$('rg-choose-new').addEventListener('click', () => startReplayGain('new'));
+$('rg-choose-all').addEventListener('click', () => startReplayGain('all'));
+
+async function openReplayGainChooser() {
+  if (replaygain.running || state.converting) return;
+
+  // Pre-flight: count files + how many are new.
+  $('replaygain-btn').disabled = true;
+  setStatus('Scanning iPod folder…');
+  const plan = await window.api.replaygain.plan();
+  $('replaygain-btn').disabled = false;
+  setStatus('Ready.');
+
+  if (!plan.ok) {
+    setStatus(`ReplayGain plan failed: ${plan.error}`);
+    return;
+  }
+  if (plan.total === 0) {
+    setStatus('No m4a files in iPod folder to process.');
+    return;
+  }
+
+  $('rg-new-count').textContent = plan.newCount;
+  $('rg-all-count').textContent = plan.total;
+  $('rg-choose-new').disabled = plan.newCount === 0;
+  $('rg-chooser-summary').innerHTML = plan.newCount === 0
+    ? `All <strong>${plan.total}</strong> tracks already tagged by this app.`
+    : `Found <strong>${plan.newCount}</strong> new track${plan.newCount === 1 ? '' : 's'}; <strong>${plan.alreadyProcessed}</strong> already tagged.`;
+
+  openModal('rg-chooser');
+}
+
+async function startReplayGain(mode) {
+  closeModal('rg-chooser');
+  if (replaygain.running || state.converting) return;
+  replaygain.running = true;
+
+  $('replaygain-btn').disabled = true;
+  $('btn-sync').disabled = true;
+  $('rg-overlay').hidden = false;
+  $('rg-meta').textContent = mode === 'new' ? 'Scanning new tracks…' : 'Scanning iPod folder…';
+  $('rg-stats').textContent = '0 / 0';
+  $('rg-progress-fill').style.width = '0%';
+  $('rg-cancel').disabled = false;
+  $('rg-cancel').textContent = 'Cancel';
+  setStatus(`Auto ReplayGain running (${mode})…`);
+
+  const result = await window.api.replaygain.run(mode);
+
+  replaygain.running = false;
+  $('replaygain-btn').disabled = false;
+  $('btn-sync').disabled = false;
+  $('rg-overlay').hidden = true;
+
+  if (!result.ok) {
+    setStatus(`Auto ReplayGain failed: ${result.error}`);
+    return;
+  }
+  const { total, ok, failed, cancelled, errors } = result;
+  const modeLabel = result.mode === 'new' ? 'new tracks' : 'all tracks';
+  if (cancelled) {
+    setStatus(`Auto ReplayGain (${modeLabel}) cancelled — ${ok} of ${total} tagged.`);
+  } else if (total === 0) {
+    setStatus(`Auto ReplayGain — no tracks to process.`);
+  } else if (failed > 0) {
+    setStatus(`Auto ReplayGain (${modeLabel}) done — ${ok} tagged, ${failed} failed (${errors.slice(0, 2).map((e) => e.file).join(', ')}${errors.length > 2 ? '…' : ''}).`);
+  } else {
+    setStatus(`Auto ReplayGain (${modeLabel}) done — ${ok} of ${total} tagged.`);
+  }
+}
+
+window.api.on('replaygain:progress', (p) => {
+  if (!replaygain.running) return;
+  const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
+  $('rg-progress-fill').style.width = `${pct}%`;
+  $('rg-stats').textContent = `${p.done} / ${p.total}  (${pct}%)`;
+
+  if (p.phase === 'analyzing' && p.current) {
+    $('rg-meta').textContent = `Analyzing  ${p.current.genre} / ${p.current.name}`;
+  } else if (p.phase === 'writing' && p.current) {
+    $('rg-meta').textContent = `Writing ${p.gain}  ${p.current.genre} / ${p.current.name}`;
+  } else if (p.phase === 'cancelled') {
+    $('rg-meta').textContent = 'Cancelling…';
+  } else if (p.phase === 'done') {
+    $('rg-meta').textContent = 'Finishing up…';
+  } else if (p.phase === 'error-file' && p.current) {
+    $('rg-meta').textContent = `Skipped  ${p.current.genre} / ${p.current.name}  (${p.error})`;
+  }
+});
+
 refreshPathsSummary();
+initUpdater();

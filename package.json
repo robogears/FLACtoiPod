@@ -1,6 +1,6 @@
 {
   "name": "flac-to-ipod",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "iPod music sync tool — scans your library by audio metadata, transcodes to 320kbps AAC with iPod 5.5-compatible artwork, copies to your iPod Genres folder.",
   "main": "main.js",
   "scripts": {

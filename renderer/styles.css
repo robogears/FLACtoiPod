@@ -75,11 +75,56 @@ input, textarea { user-select: text; }
     color: var(--text);
     -webkit-app-region: no-drag;
 }
+.brand-version {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0;
+    margin-left: -4px;
+    -webkit-app-region: no-drag;
+}
+
+/* One-click "Update now" pill — appears next to the version when a newer
+   release is detected. Click → download → auto-apply (no second click). */
+.brand-update-pill {
+    -webkit-app-region: no-drag;
+    background: var(--text);
+    color: var(--bg);
+    border: 0;
+    padding: 4px 10px;
+    border-radius: var(--r-pill);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: background 0.15s, opacity 0.15s;
+    font-variant-numeric: tabular-nums;
+    font-family: inherit;
+}
+.brand-update-pill:not(:disabled) {
+    animation: brand-update-pulse 2.4s ease-in-out infinite;
+}
+.brand-update-pill:hover:not(:disabled) {
+    background: #e5e5e5;
+}
+.brand-update-pill:disabled {
+    background: var(--bg-elev);
+    color: var(--text-muted);
+    cursor: default;
+    animation: none;
+}
+.brand-update-pill[hidden] { display: none; }
+@keyframes brand-update-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.45); }
+    50%      { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+}
+
 .brand-paths {
     font-size: 11px;
     font-weight: 500;
     color: var(--text-dim);
-    margin-left: 6px;
+    margin-left: 12px;
     -webkit-app-region: no-drag;
     font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
     max-width: 540px;
@@ -101,10 +146,27 @@ input, textarea { user-select: text; }
     align-items: center;
     justify-content: center;
     transition: color 0.15s, background 0.15s;
+    font-family: inherit;
 }
 .icon-btn:hover {
     color: var(--text);
     background: var(--bg-elev);
+}
+.icon-btn:disabled {
+    color: var(--text-dim);
+    cursor: not-allowed;
+    background: transparent;
+}
+
+/* Topbar buttons that combine an icon and a text label. */
+.icon-btn.topbar-action {
+    gap: 6px;
+    padding: 6px 10px;
+}
+.icon-btn.topbar-action span {
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
 }
 
 /* ─── Main layout ──────────────────────────────────────────────────────── */
@@ -535,6 +597,30 @@ input[type="text"][readonly] {
     cursor: default;
 }
 
+.settings-section {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+}
+.auth-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.auth-status {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+.auth-status.ok  { color: var(--text); }
+.auth-status.bad { color: var(--error); }
+.modal-hint em {
+    color: var(--text);
+    font-style: normal;
+    font-weight: 600;
+}
+
 /* ─── Confirm dialog ───────────────────────────────────────────────────── */
 .confirm-msg {
     font-size: 14px;
@@ -589,6 +675,68 @@ input[type="text"][readonly] {
 .loading-text {
     font-size: 13px;
     color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Auto ReplayGain chooser modal — two big buttons side by side. */
+.rg-chooser-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+}
+.rg-chooser-options .rg-choose {
+    padding: 16px 18px;
+    font-size: 14px;
+    text-align: center;
+}
+.rg-chooser-options .rg-choose span {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Auto ReplayGain overlay — richer than the generic loading-inner. */
+.rg-panel {
+    min-width: 480px;
+    max-width: 560px;
+    padding: 6px 0;
+}
+.rg-panel .spinner {
+    margin-bottom: 4px;
+}
+.rg-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.2px;
+}
+.rg-meta {
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    max-width: 520px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.rg-progress-bar {
+    width: 440px;
+    height: 5px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.rg-progress-fill {
+    height: 100%;
+    background: var(--text);
+    width: 0%;
+    transition: width 0.2s ease-out;
+}
+.rg-stats {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
     font-weight: 500;
 }
 

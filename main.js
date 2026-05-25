@@ -4,6 +4,8 @@ const fs = require('fs');
 const { scan } = require('./src/scanner');
 const { convertOne } = require('./src/converter');
 const metadata = require('./src/metadata');
+const updater = require('./src/updater');
+const replaygain = require('./src/replaygain');
 
 const DEFAULT_CONFIG = {
   musicRoot: 'Z:\\Dropbox\\Music',
@@ -12,7 +14,9 @@ const DEFAULT_CONFIG = {
 
 let cfg = { ...DEFAULT_CONFIG };
 let configPath = '';
+let replaygainHistoryPath = '';
 let cancelRequested = false;
+let replaygainCancelRequested = false;
 let mainWindow = null;
 
 function loadConfig() {
@@ -52,7 +56,13 @@ function createWindow() {
 app.whenReady().then(() => {
   loadConfig();
   metadata.init(path.join(app.getPath('userData'), 'metadata-cache.json'));
+  replaygainHistoryPath = path.join(app.getPath('userData'), 'replaygain-history.json');
   createWindow();
+  // Fire-and-forget launch-time update check. Silent on failure (no network,
+  // private repo, rate-limit) so it never interrupts startup.
+  setTimeout(() => {
+    updater.checkForUpdatesAndNotify(mainWindow).catch(() => {});
+  }, 1500);
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -146,5 +156,73 @@ ipcMain.handle('sync:delete', async (_e, fullPath) => {
 
 ipcMain.handle('shell:open-folder', (_e, fullPath) => {
   shell.openPath(fullPath);
+  return true;
+});
+
+// ─── Updater IPC ──────────────────────────────────────────────────────
+
+ipcMain.handle('app:version', () => app.getVersion());
+
+ipcMain.handle('update:check', async (event) => {
+  const result = await updater.getUpdateStatus();
+  if (result.status === 'available' && mainWindow && !mainWindow.isDestroyed()) {
+    event.sender.send('update:available', {
+      version: result.version,
+      downloadUrl: result.downloadUrl,
+      releaseUrl: result.releaseUrl,
+    });
+  }
+  return result;
+});
+
+ipcMain.handle('update:can-self-install', () => updater.canSelfInstall());
+
+ipcMain.handle('update:download', async (event, url) => {
+  return updater.downloadUpdate(url, (downloaded, total) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      event.sender.send('update:download-progress', { downloaded, total });
+    }
+  });
+});
+
+ipcMain.handle('update:apply', () => updater.applyUpdate());
+
+ipcMain.handle('shell:open-external', (_e, url) => {
+  updater.openExternal(url);
+  return true;
+});
+
+// ─── ReplayGain IPC ───────────────────────────────────────────────────
+
+ipcMain.handle('replaygain:plan', () => {
+  try {
+    return { ok: true, ...replaygain.planFiles(cfg.ipodGenresRoot, replaygainHistoryPath) };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('replaygain:run', async (event, opts = {}) => {
+  const mode = opts.mode === 'new' ? 'new' : 'all';
+  replaygainCancelRequested = false;
+  try {
+    const result = await replaygain.processAll(cfg.ipodGenresRoot, {
+      mode,
+      historyPath: replaygainHistoryPath,
+      onProgress: (p) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          event.sender.send('replaygain:progress', p);
+        }
+      },
+      shouldCancel: () => replaygainCancelRequested,
+    });
+    return { ok: true, ...result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('replaygain:cancel', () => {
+  replaygainCancelRequested = true;
   return true;
 });

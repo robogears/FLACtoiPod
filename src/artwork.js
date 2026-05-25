@@ -2,14 +2,17 @@ const path = require('path');
 const sharp = require('sharp');
 const { extractEmbeddedArtwork } = require('./metadata');
 
-// Resize an image buffer to 600x600 RGB JPEG (iPod 5.5 compatible).
-// Sharp emits true RGB JPEG with 4:4:4 chroma — never YUV, which iPod renders blank.
+// Resize an image buffer to a 600x600 JPEG that the iPod 5.5 can display.
+// The hardware JPEG decoder only handles 4:2:0 chroma subsampling — higher
+// subsampling rates (4:2:2, 4:4:4) are silently rejected and the artwork
+// renders blank on the device. Verified via ffprobe: this config produces
+// `pix_fmt: yuvj420p`.
 async function toIpodJpeg(inputBuffer, outPath) {
   await sharp(inputBuffer)
     .resize(600, 600, { fit: 'cover' })
     .jpeg({
       quality: 90,
-      chromaSubsampling: '4:4:4',
+      chromaSubsampling: '4:2:0',
       mozjpeg: false,
     })
     .toFile(outPath);
