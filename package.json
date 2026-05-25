@@ -1,0 +1,114 @@
+{
+  "name": "flac-to-ipod",
+  "version": "0.1.1",
+  "description": "iPod music sync tool — scans your library by audio metadata, transcodes to 320kbps AAC with iPod 5.5-compatible artwork, copies to your iPod Genres folder.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac --arm64"
+  },
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robogears/FLACtoiPod.git"
+  },
+  "author": "robogears",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^26.8.1"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "ffprobe-static": "^3.1.0",
+    "music-metadata": "^11.12.3",
+    "sharp": "^0.33.5"
+  },
+  "build": {
+    "appId": "com.robogears.flactoipod",
+    "productName": "FLAC to iPod",
+    "copyright": "Copyright © 2026 robogears",
+    "publish": null,
+    "afterPack": "./build/after-pack.js",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "renderer/**/*",
+      "package.json",
+      "node_modules/**/*",
+      "!**/*.md",
+      "!.gitignore",
+      "!**/{.DS_Store,Thumbs.db,desktop.ini}",
+      "!**/{.git,.github,.vscode,.idea}",
+      "!**/{*.log,*.tmp}",
+      "!test-scan.js",
+      "!test-embedded.js"
+    ],
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**/*",
+      "node_modules/ffprobe-static/**/*",
+      "node_modules/sharp/**/*",
+      "node_modules/@img/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FLAC to iPod",
+      "artifactName": "flac-to-ipod-setup.exe",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "category": "public.app-category.music",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "flac-to-ipod-mac-${arch}.${ext}",
+      "identity": null
+    },
+    "dmg": {
+      "title": "Install FLAC to iPod",
+      "window": {
+        "width": 540,
+        "height": 400
+      },
+      "contents": [
+        {
+          "x": 140,
+          "y": 220,
+          "type": "file"
+        },
+        {
+          "x": 400,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self';">
+    <title>FLAC → iPod</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand" id="brand">
+            <svg class="brand-logo" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <!-- Vinyl-style disc + downward arrow on label, signalling "sync to device". -->
+                <circle cx="12" cy="12" r="10" fill="#fff"/>
+                <circle cx="12" cy="12" r="5" fill="#000"/>
+                <path d="M10.5 8 L13.5 8 L13.5 11 L15 11 L12 14.5 L9 11 L10.5 11 Z" fill="#fff"/>
+            </svg>
+            <span class="brand-name">FLAC → iPod</span>
+            <span class="brand-paths" id="brand-paths">…</span>
+        </div>
+        <div class="topbar-actions">
+            <button class="icon-btn" id="settings-btn" title="Settings" aria-label="Settings">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="sync-bar">
+            <button id="btn-sync" class="primary-btn big">
+                <svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                    <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                </svg>
+                <span class="label-text">Sync</span>
+            </button>
+            <div class="sync-summary" id="sync-summary">Click <strong>Sync</strong> to scan both libraries.</div>
+        </section>
+
+        <section class="results" id="results" hidden>
+            <div class="col col-adds">
+                <div class="col-head">
+                    <div class="col-head-left">
+                        <span class="label">Adds</span>
+                        <span class="col-count" id="adds-count">0</span>
+                    </div>
+                    <div class="col-head-actions">
+                        <button class="text-btn" id="select-all-adds">Select all</button>
+                        <button class="text-btn" id="select-none-adds">None</button>
+                    </div>
+                </div>
+                <div class="col-body" id="adds-body">
+                    <p class="empty">No new tracks to add.</p>
+                </div>
+                <div class="col-foot">
+                    <button class="primary-btn" id="btn-add-selected" disabled>
+                        Add <span id="selected-count">0</span> selected
+                    </button>
+                </div>
+            </div>
+
+            <div class="col col-deletes">
+                <div class="col-head">
+                    <div class="col-head-left">
+                        <span class="label">Deletes</span>
+                        <span class="col-count" id="deletes-count">0</span>
+                    </div>
+                    <div class="col-head-actions">
+                        <button class="text-btn" id="select-all-deletes">Select all</button>
+                        <button class="text-btn" id="select-none-deletes">None</button>
+                    </div>
+                </div>
+                <div class="col-body" id="deletes-body">
+                    <p class="empty">No stale tracks on iPod.</p>
+                </div>
+                <div class="col-foot">
+                    <button class="danger-btn" id="btn-delete-selected" disabled>
+                        Delete <span id="deletes-selected-count">0</span> selected
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="progress" id="progress" hidden>
+            <div class="progress-head">
+                <div class="progress-title" id="progress-title">Converting…</div>
+                <button class="text-btn cancel-btn" id="btn-cancel">Cancel</button>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <div class="progress-meta" id="progress-meta">—</div>
+            <ul class="log" id="convert-log"></ul>
+        </section>
+    </main>
+
+    <footer class="statusbar" id="statusbar">Ready.</footer>
+
+    <!-- Settings modal -->
+    <div class="modal-backdrop" id="settings-modal" hidden>
+        <div class="modal">
+            <div class="modal-head">
+                <h2>Settings</h2>
+                <button class="icon-btn close-modal" data-close="settings-modal" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body">
+                <label class="label">Music source folder</label>
+                <div class="folder-row">
+                    <input id="cfg-music" type="text" readonly>
+                    <button id="pick-music" class="secondary-btn">Browse…</button>
+                </div>
+                <p class="modal-hint" style="margin-top:8px;">Master library — FLAC, MP3, WAV, M4A grouped by genre.</p>
+
+                <label class="label" style="margin-top:22px;">iPod Genres destination</label>
+                <div class="folder-row">
+                    <input id="cfg-ipod" type="text" readonly>
+                    <button id="pick-ipod" class="secondary-btn">Browse…</button>
+                </div>
+                <p class="modal-hint" style="margin-top:8px;">Where 320kbps AAC M4A files land — one genre subfolder each.</p>
+            </div>
+            <div class="modal-foot">
+                <button class="primary-btn" data-close="settings-modal">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete confirmation modal -->
+    <div class="modal-backdrop" id="confirm-modal" hidden>
+        <div class="modal">
+            <div class="modal-head">
+                <h2>Delete from iPod?</h2>
+            </div>
+            <div class="modal-body">
+                <p class="confirm-msg" id="confirm-msg">—</p>
+                <p class="confirm-warn">This cannot be undone.</p>
+            </div>
+            <div class="modal-foot">
+                <button class="text-btn" id="confirm-cancel">Cancel</button>
+                <button class="primary-btn" id="confirm-ok">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

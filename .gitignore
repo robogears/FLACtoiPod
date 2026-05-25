@@ -1,0 +1,42 @@
+# ─── Node / npm ────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─── Electron build output ─────────────────────────────────────
+# electron-builder writes to dist/. The build/ directory is for build-time
+# INPUTS (icons, afterPack hooks) and must stay tracked.
+dist/
+out/
+.cache/
+
+# ─── Local dev / test artifacts ────────────────────────────────
+test-scan.js
+test-embedded.js
+*.tmp
+*.tmp.*
+
+# ─── Diagnostic / log files ────────────────────────────────────
+*.log
+debug_*.js
+
+# ─── Secrets / credentials (MUST NOT BE COMMITTED) ─────────────
+.env
+.env.*
+!.env.example
+*.token
+token.json
+
+# ─── OS / editor cruft ─────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# ─── Claude scratch ────────────────────────────────────────────
+.claude/
