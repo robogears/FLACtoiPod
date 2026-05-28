@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  FLAC to iPod — app icon.
+  Pure monochrome (matches the in-app design system + robogearsDownloader family).
+  iPod 5G silhouette with click wheel; audio waveform shown inside the screen.
+-->
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision">
+
+  <!-- Rounded-square background (standard app icon shape) -->
+  <rect width="1024" height="1024" rx="180" fill="#000000"/>
+
+  <!-- iPod body -->
+  <rect x="300" y="120" width="424" height="784" rx="56" fill="#ffffff"/>
+
+  <!-- Screen bezel (subtle inset look — a 1-px ring around the screen) -->
+  <rect x="344" y="168" width="336" height="264" rx="12" fill="#000000"/>
+  <rect x="344" y="168" width="336" height="264" rx="12" fill="none" stroke="#222222" stroke-width="2"/>
+
+  <!-- Audio waveform inside the screen -->
+  <path
+    d="M 380 312
+       L 408 312 L 408 256
+       L 432 256 L 432 368
+       L 456 368 L 456 224
+       L 480 224 L 480 384
+       L 504 384 L 504 272
+       L 528 272 L 528 336
+       L 552 336 L 552 296
+       L 580 296 L 580 320
+       L 608 320 L 608 296
+       L 636 296"
+    stroke="#ffffff"
+    stroke-width="9"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"/>
+
+  <!-- Click wheel: outer ring -->
+  <circle cx="512" cy="672" r="168" fill="#000000"/>
+
+  <!-- Click wheel: subtle inner separation line -->
+  <circle cx="512" cy="672" r="168" fill="none" stroke="#222222" stroke-width="2"/>
+
+  <!-- Center select button -->
+  <circle cx="512" cy="672" r="52" fill="#ffffff"/>
+
+</svg>

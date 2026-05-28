@@ -1,15 +1,15 @@
-# What's new in v0.1.4
+# What's new in v0.1.5
 
-**Critical bug fix.** v0.1.1, v0.1.2, and v0.1.3 were all non-functional after install — every conversion attempt failed with `spawn ...\app.asar\node_modules\ffmpeg-static\ffmpeg.exe ENOENT`. The bug was invisible during development because `npm start` runs without asar packaging.
+A small polish release on top of the verified-working v0.1.4 build. Brings a dedicated app icon and a proper in-repo design doc.
 
-## Fix
-- `require('ffmpeg-static')` in a packaged Electron build returns a path inside `app.asar`. Even though `node_modules/ffmpeg-static/**/*` was correctly listed in `asarUnpack` (so the binary IS extracted to `app.asar.unpacked/`), Node's `spawn()` syscall can't see into asar archives. New `src/bin-path.js` rewrites the path string at runtime via `.replace('app.asar', 'app.asar.unpacked')`. No-op in dev; redirects to the real binary in packaged builds.
-- All ffmpeg invocations in `src/converter.js` (transcode + artwork embed) and `src/replaygain.js` (ebur128 measurement) go through the shared resolver.
+## App icon
+- Custom logo replaces the generic Electron atom across the installer, Start Menu shortcut, desktop shortcut, taskbar, alt-tab thumbnail (Windows) and Finder / Dock / app-switcher (macOS).
+- iPod 5G silhouette with click wheel; audio waveform shown inside the screen. Pure monochrome — matches the in-app design system and the broader `robogears` family aesthetic.
+- Source SVG lives at [`build/icon.svg`](build/icon.svg) as the single source of truth; PNG is rendered from it via `sharp`. electron-builder auto-generates `.ico` (Windows) and `.icns` (macOS) at build time.
+- Topbar mark in the app updated to a simplified 24×24 variant of the same logo (waveform detail dropped at small sizes).
 
-## What this means for prior versions
-- Anyone on v0.1.1, v0.1.2, or v0.1.3 who installed the NSIS / DMG build has an app that couldn't run conversions at all.
-- **v0.1.4 is the first build where conversions actually work in production.** Two layered fixes (v0.1.3's JFIF marker, v0.1.4's asar path) only become testable on real hardware starting here.
-- Existing tracks on your iPod from earlier versions still have broken artwork — delete + re-sync them through the now-working app.
+## Project docs
+- [`CLAUDE.md`](CLAUDE.md) added to the repo — authoritative architecture + conventions doc for any future contributor (human or AI). Covers tech stack, repo layout, data flows, the iPod 5.5 hardware-decoder constraints, ffmpeg quirks (including the asar/spawn `bin-path.js` pattern), state persistence, anti-patterns, and known gaps.
 
 ---
 
@@ -18,7 +18,7 @@
 - **Windows**: download `flac-to-ipod-setup.exe`, double-click. NSIS installer drops the app at `%LOCALAPPDATA%\Programs\FLAC to iPod\`. SmartScreen may warn on first launch — "More info" → "Run anyway".
 - **macOS (Apple Silicon)**: download `flac-to-ipod-mac-arm64.dmg`, mount, drag into `/Applications/`. First launch: right-click → Open to bypass Gatekeeper.
 
-The in-app **Update** pill in the topbar will self-install future releases. Users on v0.1.1 still need a one-time manual install (that version has no updater code).
+The in-app **Update** pill in the topbar will self-install this release on next launch from any v0.1.2+ build.
 
 ## Requirements
 
@@ -29,4 +29,4 @@ The in-app **Update** pill in the topbar will self-install future releases. User
 
 ---
 
-**Full Changelog**: https://github.com/robogears/FLACtoiPod/compare/v0.1.3...v0.1.4
+**Full Changelog**: https://github.com/robogears/FLACtoiPod/compare/v0.1.4...v0.1.5
